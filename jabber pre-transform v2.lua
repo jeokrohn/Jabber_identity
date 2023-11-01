@@ -27,19 +27,36 @@ Example SDL trace output:
 "Amena Kirk" <sip:akirk@tmedemo.com;x-cisco-number=3121;x-cisco-callback-number=3121>;party=calling;screen=yes;privacy=off
 "Amena Kirk" <sip:3121@tmedemo.com>;party=calling;screen=yes;privacy=off
 
+Change log:
 1.11.23: set host portion of numeric identity URI to fixed value
 1.11.23: extract x-cisco-number from RPID header so that the logic also works with UPDATE messages which don't have
          pre-transformation number (x-cisco-callback-number)
+1.11.23: read "OTLD" script parameter to set a fixed RHS for numeric identity URIs
 --]]
 M = {}
 trace.enable()
 
+-- try to read the OTLD script parameter -> the fixed RHS for numeric identity URIs
+local otld = scriptParameters.getValue("OTLD")
+if otld == "" then
+    -- name exists but no value is set
+    otld = nil
+end
+if otld == nil then
+    trace.format("OTLD script parameter not set or does not exist")
+else
+    trace.format("OTLD script parameter set to: /%s/", otld)
+end
+
 function set_numeric_uri(h, s, num)
-    -- set the host portion off the URI to numeric
-    -- with this the numeric identity URI inherits the host portion from the alpha identity URI
-    -- s = s:gsub("sip:.+@", "sip:" .. num .. "@")
-    -- .. and with this the host portion is set to a fixed value which needs to be set to match the OTLD set on UCM
-    s = s:gsub("<sip:.+@.+>", "<sip:" .. num .. "@mucc-services.ch>")
+    -- set the host portion of the URI to numeric
+    if otld == nil then
+        -- with this the numeric identity URI inherits the host portion from the alpha identity URI
+        s = s:gsub("sip:.+@", "sip:" .. num .. "@")
+    else
+        -- .. and with this the host portion is set to a fixed value which needs to be set to match the OTLD set on UCM
+        s = s:gsub("<sip:.+@.+>", "<sip:" .. num .. "@" .. otld .. ">")
+    end
     trace.format("%s numeric URI /%s/", h, s)
 
     -- remove display name
