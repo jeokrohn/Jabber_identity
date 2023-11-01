@@ -26,12 +26,20 @@ Example SDL trace output:
 
 "Amena Kirk" <sip:akirk@tmedemo.com;x-cisco-number=3121;x-cisco-callback-number=3121>;party=calling;screen=yes;privacy=off
 "Amena Kirk" <sip:3121@tmedemo.com>;party=calling;screen=yes;privacy=off
+
+1.11.23: set host portion of numeric identity URI to fixed value
+1.11.23: extract x-cisco-number from RPID header so that the logic also works with UPDATE messages which don't have
+         pre-transformation number (x-cisco-callback-number)
 --]]
 M = {}
 trace.enable()
 
 function set_numeric_uri(h, s, num)
-    s = s:gsub("sip:.+@", "sip:" .. num .. "@")
+    -- set the host portion off the URI to numeric
+    -- with this the numeric identity URI inherits the host portion from the alpha identity URI
+    -- s = s:gsub("sip:.+@", "sip:" .. num .. "@")
+    -- .. and with this the host portion is set to a fixed value which needs to be set to match the OTLD set on UCM
+    s = s:gsub("<sip:.+@.+>", "<sip:" .. num .. "@mucc-services.ch>")
     trace.format("%s numeric URI /%s/", h, s)
 
     -- remove display name
@@ -41,7 +49,7 @@ function set_numeric_uri(h, s, num)
     return s
 end
 
-function clean_rpid(msg)
+function clean_rpid(msg, with_from)
     local rpid = msg:getHeader("Remote-Party-ID")
     -- check if we got a header
     if rpid ~= nil then
@@ -55,30 +63,32 @@ function clean_rpid(msg)
             trace.format("x-cisco-number: /%s/", cisco_number)
 
             -- remove all x-cisco-...=;
-            rpid = rpid:gsub(";x%-cisco%-[%a%-]+=[%+%d]+", "")
-            trace.format("cleaned RPID: /%s/", rpid)
+            -- rpid = rpid:gsub(";x%-cisco%-[%a%-]+=[%+%d]+", "")
+            -- trace.format("cleaned RPID: /%s/", rpid)
 
             rpid = set_numeric_uri("RPID", rpid, cisco_number)
 
             msg:modifyHeader("Remote-Party-ID", rpid)
 
-            -- also clean up the From header
-            local from = msg:getHeader("From")
-            trace.format("From header: /%s/", from)
+            if with_from then
+                -- also clean up the From header
+                local from = msg:getHeader("From")
+                trace.format("From header: /%s/", from)
 
-            from = set_numeric_uri("From", from, cisco_number)
-            msg:modifyHeader("From", from)
+                from = set_numeric_uri("From", from, cisco_number)
+                msg:modifyHeader("From", from)
+            end
         end
     end
     return msg
 end
 
 function M.outbound_INVITE(msg)
-    msg = clean_rpid(msg)
+    msg = clean_rpid(msg, true)
 end
 
 function M.outbound_UPDATE(msg)
-    msg = clean_rpid(msg)
+    msg = clean_rpid(msg, true)
 end
 
 return M
