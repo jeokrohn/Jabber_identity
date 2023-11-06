@@ -32,6 +32,7 @@ Change log:
 1.11.23: extract x-cisco-number from RPID header so that the logic also works with UPDATE messages which don't have
          pre-transformation number (x-cisco-callback-number)
 1.11.23: read "OTLD" script parameter to set a fixed RHS for numeric identity URIs
+6.11.23: with OTLD set the x-cisco-number and x-cisco-callback-number URI parameters got removed
 --]]
 M = {}
 trace.enable()
@@ -55,7 +56,7 @@ function set_numeric_uri(h, s, num)
         s = s:gsub("sip:.+@", "sip:" .. num .. "@")
     else
         -- .. and with this the host portion is set to a fixed value which needs to be set to match the OTLD set on UCM
-        s = s:gsub("<sip:.+@.+>", "<sip:" .. num .. "@" .. otld .. ">")
+        s = s:gsub("<sip:.+@.+;", "<sip:" .. num .. "@" .. otld .. ";")
     end
     trace.format("%s numeric URI /%s/", h, s)
 
