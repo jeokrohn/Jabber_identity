@@ -34,6 +34,7 @@ Change log:
 1.11.23: read "OTLD" script parameter to set a fixed RHS for numeric identity URIs
 6.11.23: with OTLD set the x-cisco-number and x-cisco-callback-number URI parameters got removed
 7.11.23: when replacing host portion of URI with OTLD only replace RHS of URI up until 1st ";"
+7.11.23: when replacing host portion of URI with OTLD only replace RHS of URI up until 1st ";" or closing ">" to fix issue with From: header
 --]]
 M = {}
 trace.enable()
@@ -57,7 +58,7 @@ function set_numeric_uri(h, s, num)
         s = s:gsub("sip:.+@", "sip:" .. num .. "@")
     else
         -- .. and with this the host portion is set to a fixed value which needs to be set to match the OTLD set on UCM
-        s = s:gsub("sip:.+@[^;]+", "sip:" .. num .. "@" .. otld)
+        s = s:gsub("sip:.+@[^;>]+", "sip:" .. num .. "@" .. otld)
     end
     trace.format("%s numeric URI /%s/", h, s)
 
