@@ -34,7 +34,10 @@ Change log:
 1.11.23: read "OTLD" script parameter to set a fixed RHS for numeric identity URIs
 6.11.23: with OTLD set the x-cisco-number and x-cisco-callback-number URI parameters got removed
 7.11.23: when replacing host portion of URI with OTLD only replace RHS of URI up until 1st ";"
-7.11.23: when replacing host portion of URI with OTLD only replace RHS of URI up until 1st ";" or closing ">" to fix issue with From: header
+7.11.23: when replacing host portion of URI with OTLD only replace RHS of URI up until 1st ";" or closing ">" to fix
+         issue with From: header
+16.11.23: again, make sure that x-cisco-number is used as numeric identity to make sure that caller id in UPDATE
+          messages gets updated accordingly
 --]]
 M = {}
 trace.enable()
@@ -72,14 +75,18 @@ end
 function clean_rpid(msg, with_from)
     local rpid = msg:getHeader("Remote-Party-ID")
     -- check if we got a header
-    if rpid ~= nil then
+    if rpid == nil then
+        trace.format("!!! not RPID header !!!")
+    else
         trace.format("RPID header: /%s/", rpid)
         -- header is something like
         --  "Amena Kirk" <sip:akirk@tmedemo.com;x-cisco-number=3121;x-cisco-callback-number=3121>;party=calling;screen=yes;privacy=off
 
-        -- extract x-cisco-callback-number
-        local cisco_number = msg:getHeaderUriParameter("Remote-Party-ID", "x-cisco-callback-number")
-        if cisco_number ~= nil then
+        -- extract x-cisco-number; has to be x-cisco-number, b/c x-cisco-callback-number is not present in UPDATE
+        local cisco_number = msg:getHeaderUriParameter("Remote-Party-ID", "x-cisco-number")
+        if cisco_numer == nil then
+            trace.format("!!! Failed to extract numeric caller id !!!")
+        else
             trace.format("x-cisco-number: /%s/", cisco_number)
 
             -- remove all x-cisco-...=;
