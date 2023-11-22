@@ -38,6 +38,7 @@ Change log:
          issue with From: header
 16.11.23: again, make sure that x-cisco-number is used as numeric identity to make sure that caller id in UPDATE
           messages gets updated accordingly
+22.11.23: typo cisco-numer vs cisco_number
 --]]
 M = {}
 trace.enable()
@@ -84,7 +85,7 @@ function clean_rpid(msg, with_from)
 
         -- extract x-cisco-number; has to be x-cisco-number, b/c x-cisco-callback-number is not present in UPDATE
         local cisco_number = msg:getHeaderUriParameter("Remote-Party-ID", "x-cisco-number")
-        if cisco_numer == nil then
+        if cisco_number == nil then
             trace.format("!!! Failed to extract numeric caller id !!!")
         else
             trace.format("x-cisco-number: /%s/", cisco_number)
